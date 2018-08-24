@@ -4,7 +4,7 @@
 #
 Name     : qtcharts
 Version  : 5.11.1
-Release  : 8
+Release  : 9
 URL      : http://download.qt.io/official_releases/qt/5.11/5.11.1/submodules/qtcharts-everywhere-src-5.11.1.tar.xz
 Source0  : http://download.qt.io/official_releases/qt/5.11/5.11.1/submodules/qtcharts-everywhere-src-5.11.1.tar.xz
 Summary  : No detailed summary available
