@@ -1,0 +1,26 @@
+Antti Kokko (1):
+      Add changes file for Qt 5.15.2
+
+Jani Heikkinen (1):
+      Bump version
+
+Tamas Martinec (1):
+      QtCharts: Append branch condition fix in QLegend
+
+Tarja Sundqvist (2):
+      Update the commercial license header to Qt Charts files
+      Revert "Update the commercial license header to Qt Charts files"
+
+diff --git a/src/charts/legend/qlegend.cpp b/src/charts/legend/qlegend.cpp
+index 6f5c2bb1..1a4f0ea2 100644
+--- a/src/charts/legend/qlegend.cpp
++++ b/src/charts/legend/qlegend.cpp
+@@ -772,7 +772,7 @@ void QLegendPrivate::handleCountChanged()
+     }
+ 
+     // Re-insert createdMarkers into m_markers in correct order.
+-    if (pos != -1 || pos == m_markers.size()) {
++    if (pos == -1 || pos == m_markers.size()) {
+         m_markers.append(createdMarkers);
+     } else {
+         for (int c = createdMarkers.size() - 1; c >= 0; --c)
