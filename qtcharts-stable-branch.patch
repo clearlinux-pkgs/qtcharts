@@ -1,15 +1,23 @@
+Andy Shaw (1):
+      Only create the GLXYSeriesData if there is no existing data
+
 Antti Kokko (1):
       Add changes file for Qt 5.15.2
 
-Jani Heikkinen (1):
+Jani Heikkinen (2):
+      Bump version
       Bump version
 
 Tamas Martinec (1):
       QtCharts: Append branch condition fix in QLegend
 
-Tarja Sundqvist (2):
+Tarja Sundqvist (3):
       Update the commercial license header to Qt Charts files
       Revert "Update the commercial license header to Qt Charts files"
+      Merge remote-tracking branch 'origin/tqtc/lts-5.15.4' into tqtc/lts-5.15-opensource
+
+Topi Reinio (1):
+      Doc: Fix issues in Q[H|V]XYModelMapper documentation
 
 diff --git a/src/charts/legend/qlegend.cpp b/src/charts/legend/qlegend.cpp
 index 6f5c2bb1..1a4f0ea2 100644
@@ -24,3 +32,93 @@ index 6f5c2bb1..1a4f0ea2 100644
          m_markers.append(createdMarkers);
      } else {
          for (int c = createdMarkers.size() - 1; c >= 0; --c)
+diff --git a/src/charts/xychart/qhxymodelmapper.cpp b/src/charts/xychart/qhxymodelmapper.cpp
+index f11201c2..b6f907b7 100644
+--- a/src/charts/xychart/qhxymodelmapper.cpp
++++ b/src/charts/xychart/qhxymodelmapper.cpp
+@@ -40,12 +40,14 @@ QT_CHARTS_BEGIN_NAMESPACE
+     Model mappers enable using a data model derived from the QAbstractItemModel
+     class as a data source for a chart. A horizontal model mapper is used to
+     create a connection between a line, spline, or scatter series and the data
+-    model that holds the consecutive data point coordinates on rows.
++    model that has \e X and \e Y rows for the coordinates and holds the data
++    points for the XYSeries as columns. A \e TableModel is a natural choice
++    for the model.
+ 
+     Both model and series properties can be used to manipulate the data. The
+     model mapper keeps the series and the data model in sync.
+ 
+-    \sa QVXYModelMapper, QXYSeries
++    \sa QVXYModelMapper, QXYSeries, {Model Data Example}
+ */
+ /*!
+     \qmltype HXYModelMapper
+@@ -57,12 +59,14 @@ QT_CHARTS_BEGIN_NAMESPACE
+     Model mappers enable using a data model derived from the QAbstractItemModel
+     class as a data source for a chart. A horizontal model mapper is used to
+     create a connection between a line, spline, or scatter series and the data
+-    model that holds the consecutive data point coordinates on rows.
++    model that has \e X and \e Y rows for the coordinates and holds the data
++    points for the XYSeries as columns. A \e TableModel is a natural choice
++    for the model.
+ 
+     Both model and series properties can be used to manipulate the data. The
+     model mapper keeps the series and the data model in sync.
+ 
+-    \sa VXYModelMapper, XYSeries
++    \sa VXYModelMapper, XYSeries, {Model Data Example}
+ */
+ 
+ /*!
+diff --git a/src/charts/xychart/qvxymodelmapper.cpp b/src/charts/xychart/qvxymodelmapper.cpp
+index 9b5655b7..eaad1796 100644
+--- a/src/charts/xychart/qvxymodelmapper.cpp
++++ b/src/charts/xychart/qvxymodelmapper.cpp
+@@ -40,12 +40,14 @@ QT_CHARTS_BEGIN_NAMESPACE
+     Model mappers enable using a data model derived from the QAbstractItemModel
+     class as a data source for a chart. A vertical model mapper is used to
+     create a connection between a line, spline, or scatter series and the data
+-    model that holds the consecutive data point coordinates in columns.
++    model that has \e X and \e Y columns for the coordinates and holds the data
++    points for the XYSeries as rows. A \e TableModel is a natural choice
++    for the model.
+ 
+     Both model and series properties can be used to manipulate the data. The
+     model mapper keeps the series and the data model in sync.
+ 
+-    \sa QHXYModelMapper, QXYSeries
++    \sa QHXYModelMapper, QXYSeries, {Model Data Example}
+ */
+ /*!
+     \qmltype VXYModelMapper
+@@ -57,12 +59,14 @@ QT_CHARTS_BEGIN_NAMESPACE
+     Model mappers enable using a data model derived from the QAbstractItemModel
+     class as a data source for a chart. A vertical model mapper is used to
+     create a connection between a line, spline, or scatter series and the data
+-    model that holds the consecutive data point coordinates in columns.
++    model that has \e X and \e Y columns for the coordinates and holds the data
++    points for the XYSeries as rows. A \e TableModel is a natural choice
++    for the model.
+ 
+     Both model and series properties can be used to manipulate the data. The
+     model mapper keeps the series and the data model in sync.
+ 
+-   \sa HXYModelMapper, XYSeries
++   \sa HXYModelMapper, XYSeries, {Model Data Example}
+ */
+ 
+ /*!
+diff --git a/src/chartsqml2/declarativeopenglrendernode.cpp b/src/chartsqml2/declarativeopenglrendernode.cpp
+index 58f7aef6..ff15034c 100644
+--- a/src/chartsqml2/declarativeopenglrendernode.cpp
++++ b/src/chartsqml2/declarativeopenglrendernode.cpp
+@@ -229,7 +229,8 @@ void DeclarativeOpenGLRenderNode::setSeriesData(bool mapDirty, const GLXYDataMap
+             GLXYSeriesData *data = oldMap.take(i.key());
+             const GLXYSeriesData *newData = i.value();
+             if (!data || newData->dirty) {
+-                data = new GLXYSeriesData;
++                if (!data)
++                    data = new GLXYSeriesData;
+                 *data = *newData;
+             }
+             m_xyDataMap.insert(i.key(), data);
