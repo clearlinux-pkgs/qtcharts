@@ -4,6 +4,14 @@ Andy Shaw (1):
 Antti Kokko (1):
       Add changes file for Qt 5.15.2
 
+Antti Määttä (1):
+      Add text bounds cache
+
+Dimitrios Apostolou (3):
+      Add comments and clarify some code
+      Fix X axis labels to not draw over each other
+      Revert "Fix X axis labels to not draw over each other"
+
 Jani Heikkinen (2):
       Bump version
       Bump version
@@ -11,14 +19,150 @@ Jani Heikkinen (2):
 Tamas Martinec (1):
       QtCharts: Append branch condition fix in QLegend
 
-Tarja Sundqvist (3):
+Tarja Sundqvist (5):
       Update the commercial license header to Qt Charts files
       Revert "Update the commercial license header to Qt Charts files"
+      Bump version
       Merge remote-tracking branch 'origin/tqtc/lts-5.15.4' into tqtc/lts-5.15-opensource
+      Merge remote-tracking branch 'origin/tqtc/lts-5.15.5' into tqtc/lts-5.15-opensource
 
 Topi Reinio (1):
       Doc: Fix issues in Q[H|V]XYModelMapper documentation
 
+diff --git a/src/charts/axis/chartaxiselement.cpp b/src/charts/axis/chartaxiselement.cpp
+index 8db5ef36..33a31242 100644
+--- a/src/charts/axis/chartaxiselement.cpp
++++ b/src/charts/axis/chartaxiselement.cpp
+@@ -419,7 +419,11 @@ QStringList ChartAxisElement::createValueLabels(qreal min, qreal max, int ticks,
+         return labels;
+ 
+     if (format.isEmpty()) {
+-        int n = qMax(int(-qFloor(std::log10((max - min) / (ticks - 1)))), 0) + 1;
++        // Calculate how many decimal digits are needed to show difference between ticks,
++        // for example tick marks 1.002 and 1.003 have a difference of 0.001 and need 3 decimals.
++        // For differences >= 1 (positive log10) use always 1 decimal.
++        double l10 = std::log10((max - min) / (ticks - 1));
++        int n = qMax(int(-qFloor(l10)), 0) + 1;
+         if (tickType == QValueAxis::TicksFixed) {
+             for (int i = 0; i < ticks; i++) {
+                 qreal value = min + (i * (max - min) / (ticks - 1));
+diff --git a/src/charts/axis/horizontalaxis.cpp b/src/charts/axis/horizontalaxis.cpp
+index 3bbc5ebe..5b74b563 100644
+--- a/src/charts/axis/horizontalaxis.cpp
++++ b/src/charts/axis/horizontalaxis.cpp
+@@ -102,7 +102,6 @@ void HorizontalAxis::updateGeometry()
+     else if (axis()->alignment() == Qt::AlignBottom)
+         arrowItem->setLine(gridRect.left(), axisRect.top(), gridRect.right(), axisRect.top());
+ 
+-    qreal width = 0;
+     const QLatin1String ellipsis("...");
+ 
+     //title
+@@ -133,6 +132,8 @@ void HorizontalAxis::updateGeometry()
+     QList<QGraphicsItem *> lines = gridItems();
+     QList<QGraphicsItem *> shades = shadeItems();
+ 
++    qreal last_label_max_x = 0;
++
+     for (int i = 0; i < layout.size(); ++i) {
+         //items
+         QGraphicsLineItem *gridItem = static_cast<QGraphicsLineItem*>(lines.at(i));
+@@ -160,6 +161,7 @@ void HorizontalAxis::updateGeometry()
+             labelItem->setHtml(text);
+         } else  {
+             qreal labelWidth = axisRect.width() / layout.count() - (2 * labelPadding());
++            // Replace digits with ellipsis "..." if number does not fit
+             QString truncatedText = ChartPresenter::truncatedText(axis()->labelsFont(), text,
+                                                                   axis()->labelsAngle(),
+                                                                   labelWidth,
+@@ -255,13 +257,14 @@ void HorizontalAxis::updateGeometry()
+         labelItem->setPos(labelPos.toPoint());
+ 
+         //label overlap detection - compensate one pixel for rounding errors
+-        if ((labelItem->pos().x() < width && labelItem->toPlainText() == ellipsis) || forceHide ||
+-            (labelItem->pos().x() + (widthDiff / 2.0)) < (axisRect.left() - 1.0) ||
+-            (labelItem->pos().x() + (widthDiff / 2.0) - 1.0) > axisRect.right()) {
++        if ((labelItem->pos().x() < last_label_max_x && labelItem->toPlainText() == ellipsis)
++            || forceHide
++            || (labelItem->pos().x() + (widthDiff / 2.0))       < (axisRect.left() - 1.0)
++            || (labelItem->pos().x() + (widthDiff / 2.0) - 1.0) > axisRect.right()) {
+             labelItem->setVisible(false);
+         } else {
+             labelItem->setVisible(true);
+-            width = boundingRect.width() + labelItem->pos().x();
++            last_label_max_x = boundingRect.width() + labelItem->pos().x();
+         }
+ 
+         //shades
+diff --git a/src/charts/chartpresenter.cpp b/src/charts/chartpresenter.cpp
+index 6be0b141..12d3958d 100644
+--- a/src/charts/chartpresenter.cpp
++++ b/src/charts/chartpresenter.cpp
+@@ -478,18 +478,59 @@ ChartTitle *ChartPresenter::titleElement()
+     return m_title;
+ }
+ 
++template <int TSize>
++struct TextBoundCache
++{
++    struct element
++    {
++        quint32 lastUsed;
++        QRectF bounds;
++    };
++    QHash<QString, element> elements;
++    quint32 usedCounter = 0;
++    QGraphicsTextItem dummyText;
++
++    QRectF bounds(const QFont &font, const QString &text)
++    {
++        const QString key = font.key() + text;
++        auto elem = elements.find(key);
++        if (elem != elements.end()) {
++            usedCounter++;
++            elem->lastUsed = usedCounter;
++            return elem->bounds;
++        }
++        dummyText.setFont(font);
++        dummyText.setHtml(text);
++        const QRectF bounds = dummyText.boundingRect();
++        if (elements.size() >= TSize) {
++            auto elem = std::min_element(elements.begin(), elements.end(),
++                                         [](const element &a, const element &b) {
++                return a.lastUsed < b.lastUsed;
++            });
++            if (elem != elements.end()) {
++                const QString key = elem.key();
++                elements.remove(key);
++            }
++        }
++        elements.insert(key, {usedCounter++, bounds});
++        return bounds;
++    }
++    QTextDocument *document()
++    {
++        return dummyText.document();
++    }
++};
++
+ QRectF ChartPresenter::textBoundingRect(const QFont &font, const QString &text, qreal angle)
+ {
+-    static QGraphicsTextItem dummyTextItem;
++    static TextBoundCache<32> textBoundCache;
+     static bool initMargin = true;
+     if (initMargin) {
+-        dummyTextItem.document()->setDocumentMargin(textMargin());
++        textBoundCache.document()->setDocumentMargin(textMargin());
+         initMargin = false;
+     }
+ 
+-    dummyTextItem.setFont(font);
+-    dummyTextItem.setHtml(text);
+-    QRectF boundingRect = dummyTextItem.boundingRect();
++    QRectF boundingRect = textBoundCache.bounds(font, text);
+ 
+     // Take rotation into account
+     if (angle) {
 diff --git a/src/charts/legend/qlegend.cpp b/src/charts/legend/qlegend.cpp
 index 6f5c2bb1..1a4f0ea2 100644
 --- a/src/charts/legend/qlegend.cpp
