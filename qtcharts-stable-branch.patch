@@ -7,9 +7,10 @@ Antti Kokko (1):
 Antti Määttä (1):
       Add text bounds cache
 
-Dimitrios Apostolou (3):
+Dimitrios Apostolou (4):
       Add comments and clarify some code
       Fix X axis labels to not draw over each other
+      Revert "Fix X axis labels to not draw over each other"
       Revert "Fix X axis labels to not draw over each other"
 
 Jani Heikkinen (2):
@@ -22,14 +23,16 @@ Paul Wicking (1):
 Tamas Martinec (1):
       QtCharts: Append branch condition fix in QLegend
 
-Tarja Sundqvist (7):
+Tarja Sundqvist (9):
       Update the commercial license header to Qt Charts files
       Revert "Update the commercial license header to Qt Charts files"
+      Bump version
       Bump version
       Bump version
       Merge remote-tracking branch 'origin/tqtc/lts-5.15.4' into tqtc/lts-5.15-opensource
       Merge remote-tracking branch 'origin/tqtc/lts-5.15.5' into tqtc/lts-5.15-opensource
       Merge remote-tracking branch 'origin/tqtc/lts-5.15.6' into tqtc/lts-5.15-opensource
+      Merge remote-tracking branch 'origin/tqtc/lts-5.15.7' into tqtc/lts-5.15-opensource
 
 Topi Reinio (1):
       Doc: Fix issues in Q[H|V]XYModelMapper documentation
