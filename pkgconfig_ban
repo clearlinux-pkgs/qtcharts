@@ -2,3 +2,11 @@
 # but are undesirable. One entry per line, no whitespace.
 Qt5Charts
 Qt5Designer
+Qt6Charts
+Qt6Designer
+Qt6Core
+Qt6Gui
+Qt6Multimedia
+Qt6Qml
+Qt6Quick
+Qt6Widgets
